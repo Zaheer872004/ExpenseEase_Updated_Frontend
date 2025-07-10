@@ -8,10 +8,10 @@ import { sendMessageToAPI } from './DataScienceApi';
 export const requestSmsPermission = async (): Promise<string> => {
   try {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    console.log(`[${timestamp}] Requesting SMS permission | User: Zaheer87`);
+    console.log(`[${timestamp}] Requesting SMS permission`);
     
     if (Platform.OS !== 'android') {
-      console.log(`[${timestamp}] SMS listening is only available on Android | User: Zaheer87`);
+      console.log(`[${timestamp}] SMS listening is only available on Android`);
       return 'unavailable';
     }
     
@@ -19,11 +19,11 @@ export const requestSmsPermission = async (): Promise<string> => {
       PermissionsAndroid.PERMISSIONS.RECEIVE_SMS
     );
     
-    console.log(`[${timestamp}] SMS permission result: ${permission} | User: Zaheer87`);
+    console.log(`[${timestamp}] SMS permission result: ${permission}`);
     return permission;
   } catch (err) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    console.error(`[${timestamp}] Error requesting SMS permission: ${err} | User: Zaheer87`);
+    console.error(`[${timestamp}] Error requesting SMS permission: ${err}`);
     return PermissionsAndroid.RESULTS.DENIED;
   }
 };
@@ -35,7 +35,7 @@ export const requestSmsPermission = async (): Promise<string> => {
  */
 export const setupSmsListener = (onMessageReceived?: (message: string) => void) => {
   const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  console.log(`[${timestamp}] Setting up SMS listener | User: Zaheer87`);
+  console.log(`[${timestamp}] Setting up SMS listener`);
   
   const subscriber = DeviceEventEmitter.addListener(
     'onSMSReceived',
@@ -51,14 +51,14 @@ export const setupSmsListener = (onMessageReceived?: (message: string) => void) 
             }
           });
       } catch (error) {
-        console.error(`[${timestamp}] Error processing SMS: ${error} | User: Zaheer87`);
+        console.error(`[${timestamp}] Error processing SMS: ${error}`);
       }
     }
   );
 
   // Return cleanup function
   return () => {
-    console.log(`[${timestamp}] Cleaning up SMS listener | User: Zaheer87`);
+    console.log(`[${timestamp}] Cleaning up SMS listener`);
     subscriber.remove();
   };
 };

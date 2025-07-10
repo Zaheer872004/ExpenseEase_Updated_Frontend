@@ -4,9 +4,7 @@ import CustomBox from './CustomBox';
 import CustomText from './CustomText';
 import {theme} from '../theme/theme';
 
-// Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted)
-const LAST_UPDATED = "2025-06-07 06:33:25";
-const CURRENT_USER = "Zaheer87";
+
 
 interface HeadingProps {
   heading?: string; // Make the heading prop optional

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PermissionsAndroid } from 'react-native';
+import { ActivityIndicator, PermissionsAndroid, View } from 'react-native';
 import { enableScreens } from 'react-native-screens';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -13,13 +13,10 @@ import TabNavigator from './src/app/navigation/TabNavigator';
 
 // Import context providers
 import { AuthContextProvider, useAuth } from './src/app/context/authContext';
+import { ExpenseContextProvider } from './src/app/context/expenseContext';
 
 // Import services
 import { setupSmsListener, requestSmsPermission } from './src/app/api/sms';
-
-// Current timestamp for tracking
-const LAST_UPDATED = "2025-06-07 07:35:21";
-const CURRENT_USER = "Zaheer87";
 
 enableScreens(true);
 
@@ -33,11 +30,21 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Create a component that will determine which stack to show based on auth status
 const AppNavigator = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
-  // if (isLoading) {
-  //   return null; // or a loading screen
-  // }
+  if (isLoading) {
+    // Show a centered loading spinner while checking auth
+    return (
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff'
+      }}>
+        <ActivityIndicator size="large" color="#2ecc71" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -82,9 +89,11 @@ function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <AuthContextProvider>
-        <GluestackUIProvider>
-          <AppNavigator />
-        </GluestackUIProvider>
+        <ExpenseContextProvider>
+          <GluestackUIProvider>
+            <AppNavigator />
+          </GluestackUIProvider>
+        </ExpenseContextProvider>
       </AuthContextProvider>
     </SafeAreaProvider>
   );

@@ -7,23 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Platform as RNPlatform,
+  Platform,
+  StatusBar,
+  Text
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import CustomText from '../components/CustomText';
 import { theme } from '../theme/theme';
-import { Button, Icon } from '@gluestack-ui/themed';
-import {
-  Camera,
-  ChevronRight,
-  User,
-  Phone,
-  Mail,
-  Bell,
-  Lock,
-  Moon,
-  LogOut,
-} from 'lucide-react-native';
+import { Button } from '@gluestack-ui/themed';
 import { useAuth, getAuthData } from '../context/authContext';
 
 export interface UserDto {
@@ -36,12 +27,12 @@ export interface UserDto {
   username?: string;
 }
 
-const ICON_SIZE_LG = 24;
-const ICON_SIZE_MD = 20;
-const ICON_SIZE_SM = 18;
+// Current timestamp info
+const CURRENT_DATE = "2025-07-10 14:10:43";
+const CURRENT_USER = "Zaheer87";
 
-const API_URL = RNPlatform.select({
-  android: 'http://192.168.143.13:8000',
+const API_URL = Platform.select({
+  android: 'http://10.112.217.13:8000',
   ios: 'http://localhost:8000',
   web: 'http://localhost:8000',
   default: 'http://localhost:8000',
@@ -49,35 +40,46 @@ const API_URL = RNPlatform.select({
 
 const ProfileItem = ({
   icon,
+  iconColor,
   label,
   value,
   onPress,
 }: {
-  icon: React.ReactNode;
+  icon: string;
+  iconColor: string;
   label: string;
   value: string;
   onPress?: () => void;
 }) => (
-  <TouchableOpacity style={styles.profileItem} onPress={onPress} disabled={!onPress}>
-    <View style={styles.iconContainer}>{icon}</View>
+  <TouchableOpacity 
+    style={styles.profileItem} 
+    onPress={onPress} 
+    disabled={!onPress}
+    activeOpacity={onPress ? 0.7 : 1}
+  >
+    <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
+      <Text style={[styles.iconText, { color: iconColor }]}>{icon}</Text>
+    </View>
     <View style={styles.itemContent}>
       <CustomText style={styles.label}>{label}</CustomText>
       <CustomText style={styles.value}>{value}</CustomText>
     </View>
-    <Icon as={ChevronRight} color={theme.colors.text.secondary} size={ICON_SIZE_LG} />
+    {onPress && (
+      <Text style={styles.rightArrow}>›</Text>
+    )}
   </TouchableOpacity>
 );
 
-const Profile = ({ navigation }: { navigation: any }) => {
+const Profile = ({ navigation }:{navigation:any}) => {
   const [userData, setUserData] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, isAuthenticated, logout } = useAuth();
 
-  const formatPhoneNumber = (phone: number): string => {
+  const formatPhoneNumber = (phone: number | null): string => {
     if (!phone) return 'Not set';
     const phoneStr = phone.toString();
     if (phoneStr.length === 10) {
-      return `(${phoneStr.slice(0, 3)}) ${phoneStr.slice(3, 6)}-${phoneStr.slice(6)}`;
+      return `${phoneStr.slice(0, 5)}-${phoneStr.slice(5,10)}`;
     }
     return phoneStr;
   };
@@ -122,10 +124,10 @@ const Profile = ({ navigation }: { navigation: any }) => {
   }, [navigation, user, isAuthenticated]);
 
   const handleLogout = async () => {
-    Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Logout',
+        text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
           setLoading(true);
@@ -163,8 +165,8 @@ const Profile = ({ navigation }: { navigation: any }) => {
 
     const selectedImage = result.assets?.[0];
     if (selectedImage?.uri) {
-      // Optionally upload image to backend or cloud storage here
-      setUserData(prev => prev ? { ...prev, profilePic: selectedImage.uri } : prev);
+      setUserData(prev => prev ? { ...prev, profile_pic: selectedImage.uri || '' } : prev);
+      Alert.alert('Success', 'Profile picture updated successfully');
     }
   };
 
@@ -181,8 +183,8 @@ const Profile = ({ navigation }: { navigation: any }) => {
     return (
       <View style={styles.loadingContainer}>
         <CustomText style={styles.errorText}>Failed to load user profile</CustomText>
-        <Button onPress={() => navigation.replace('Login')} style={styles.button}>
-          <CustomText>Return to Login</CustomText>
+        <Button onPress={() => navigation.replace('Login')}>
+          <CustomText style={styles.buttonText}>Return to Login</CustomText>
         </Button>
       </View>
     );
@@ -190,199 +192,280 @@ const Profile = ({ navigation }: { navigation: any }) => {
 
   const profileImage = userData.profile_pic || 'https://i.pravatar.cc/300';
 
-  console.log('Profile Data:', userData);
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-          <TouchableOpacity style={styles.editButton} onPress={pickImage}>
-            <Icon as={Camera} color={theme.colors.primary} size={ICON_SIZE_LG} />
-          </TouchableOpacity>
+    <View style={styles.container}>
+      <StatusBar backgroundColor={theme.colors.primary} barStyle="light-content" />
+      
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.profileSection}>
+          <View style={styles.profileImageContainer}>
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
+            <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+              <Text style={styles.cameraIcon}>📷</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <CustomText style={styles.name}>
+            {userData.first_name} {userData.last_name || ''}
+          </CustomText>
+          <CustomText style={styles.username}>@{userData.username}</CustomText>
         </View>
-        <CustomText style={styles.name}>
-          {userData.first_name} {userData.last_name || ''}
-        </CustomText>
-        <CustomText style={styles.userId}>@{userData.username}</CustomText>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.section}>
+        
+        <View style={styles.infoSection}>
           <CustomText style={styles.sectionTitle}>Personal Information</CustomText>
           <View style={styles.card}>
             <ProfileItem
-              icon={<Icon as={User} color={theme.colors.primary} size={ICON_SIZE_LG} />}
+              icon="👤"
+              iconColor="#2ecc71"
               label="Name"
               value={`${userData.first_name} ${userData.last_name || ''}`}
             />
+            <View style={styles.divider} />
+            
             <ProfileItem
-              icon={<Icon as={Phone} color={theme.colors.primary} size={ICON_SIZE_LG} />}
+              icon="📱"
+              iconColor="#3498db"
               label="Phone"
-              value={formatPhoneNumber(userData.phone_number as number)}
+              value={formatPhoneNumber(userData.phone_number)}
             />
+            <View style={styles.divider} />
+            
             <ProfileItem
-              icon={<Icon as={Mail} color={theme.colors.primary} size={ICON_SIZE_MD} />}
+              icon="✉️"
+              iconColor="#9b59b6"
               label="Email"
               value={userData.email || 'Not set'}
             />
           </View>
         </View>
-
-        <View style={styles.section}>
+        
+        <View style={styles.infoSection}>
           <CustomText style={styles.sectionTitle}>Settings</CustomText>
           <View style={styles.card}>
             <ProfileItem
-              icon={<Icon as={Bell} color={theme.colors.primary} size={ICON_SIZE_MD} />}
+              icon="🔔"
+              iconColor="#e74c3c"
               label="Notifications"
               value="On"
+              onPress={() => Alert.alert('Notifications', 'Notification settings coming soon')}
             />
+            <View style={styles.divider} />
+            
             <ProfileItem
-              icon={<Icon as={Lock} color={theme.colors.primary} size={ICON_SIZE_MD} />}
+              icon="🔒"
+              iconColor="#f39c12"
               label="Privacy"
               value="View Settings"
+              onPress={() => Alert.alert('Privacy', 'Privacy settings coming soon')}
             />
+            <View style={styles.divider} />
+            
             <ProfileItem
-              icon={<Icon as={Moon} color={theme.colors.primary} size={ICON_SIZE_MD} />}
+              icon="🌓"
+              iconColor="#34495e"
               label="Dark Mode"
               value="System"
+              onPress={() => Alert.alert('Theme', 'Theme settings coming soon')}
             />
           </View>
         </View>
-
-        <View style={styles.section}>
-          <View style={styles.card}>
-            <ProfileItem
-              icon={<Icon as={LogOut} color="red" size={ICON_SIZE_SM} />}
-              label="Logout"
-              value="Sign out of your account"
-              onPress={handleLogout}
-            />
-          </View>
-        </View>
-
+        
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          {/* 🚪 */}
+          <Text style={styles.logoutIcon}></Text>
+          <CustomText style={styles.logoutText}>Sign Out</CustomText>
+        </TouchableOpacity>
+        
         <View style={styles.footer}>
-          <CustomText style={styles.footerText}>User ID: {userData.user_id}</CustomText>
-          <CustomText style={styles.footerText}>Last Updated: 2025-06-07 05:55:53</CustomText>
+          <CustomText style={styles.footerText}>
+            User ID: {userData.user_id}
+          </CustomText>
+          <CustomText style={styles.footerText}>
+            Last Updated: {CURRENT_DATE}
+          </CustomText>
+          <CustomText style={styles.footerText}>
+            User: {CURRENT_USER}
+          </CustomText>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background.primary,
-    padding: theme.spacing.xl,
+    backgroundColor: '#f8f9fa',
+    padding: 20,
   },
   loadingText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.text.secondary,
+    marginTop: 15,
+    fontSize: 16,
+    color: '#7f8c8d',
   },
   errorText: {
-    fontSize: theme.typography.fontSize.lg,
-    color: 'red',
-    marginBottom: theme.spacing.lg,
+    fontSize: 16,
+    color: '#e74c3c',
+    marginBottom: 20,
   },
-  button: { marginTop: theme.spacing.lg },
-  header: {
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  profileSection: {
     alignItems: 'center',
-    paddingVertical: theme.spacing['2xl'],
-    backgroundColor: theme.colors.surface.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.effects.glass.borderColor,
+    marginVertical: 20,
+    paddingHorizontal: 20,
   },
-  profileImageContainer: { position: 'relative', marginBottom: theme.spacing.lg },
+  profileImageContainer: {
+    position: 'relative',
+  },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 3,
     borderColor: theme.colors.primary,
   },
-  editButton: {
+  cameraButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: theme.colors.surface.secondary,
-    borderRadius: theme.borderRadius.full,
-    padding: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.primary,
+    borderColor: '#fff',
+  },
+  cameraIcon: {
+    fontSize: 18,
   },
   name: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginTop: 15,
+    marginBottom: 5,
   },
-  userId: {
-    fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.text.secondary,
+  username: {
+    fontSize: 16,
+    color: '#7f8c8d',
   },
-  content: { padding: theme.spacing.lg },
-  section: { marginBottom: theme.spacing.xl },
+  infoSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.md,
-    marginLeft: theme.spacing.lg,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 10,
+    marginLeft: 5,
   },
   card: {
-    backgroundColor: theme.colors.surface.primary,
-    borderRadius: theme.borderRadius.lg,
-    ...RNPlatform.select({
-      ios: {
-        shadowColor: theme.colors.effects.shadow.medium.color,
-        shadowOffset: theme.colors.effects.shadow.medium.offset,
-        shadowOpacity: theme.colors.effects.shadow.medium.opacity,
-        shadowRadius: theme.colors.effects.shadow.medium.radius,
-      },
-      android: { elevation: 4 },
-    }),
-    borderWidth: 1,
-    borderColor: theme.colors.effects.glass.borderColor,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 5,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   profileItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.effects.glass.borderColor,
+    padding: 15,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.surface.elevated,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.md,
+    marginRight: 15,
   },
-  itemContent: { flex: 1 },
+  iconText: {
+    fontSize: 20,
+  },
+  itemContent: {
+    flex: 1,
+  },
   label: {
-    fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.text.secondary,
-    marginBottom: 2,
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 3,
   },
   value: {
-    fontSize: theme.typography.fontSize.base,
-    color: theme.colors.text.primary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  rightArrow: {
+    fontSize: 24,
+    color: '#95a5a6',
+    fontWeight: 'bold',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 15,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    backgroundColor: '#e74c3c',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  logoutIcon: {
+    marginRight: 10,
+    fontSize: 20,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   footer: {
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    marginBottom: 30,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.text.tertiary,
+    fontSize: 12,
+    color: '#95a5a6',
     marginBottom: 4,
   },
 });

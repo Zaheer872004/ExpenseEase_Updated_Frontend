@@ -30,6 +30,7 @@ import {
   interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean | undefined;
+    isLoading: boolean;
     login: (username: string, password: string) => Promise<{ success: boolean; msg?: string }>;
     logout: () => Promise<{ success: boolean; msg?: string }>;
     register: (
@@ -55,10 +56,10 @@ import {
   
   // API URL configuration based on platform
   const API_URL = Platform.select({
-    android: 'http://192.168.143.13:8000', // Your computer's IP on the network
-    ios: 'http://localhost:8000',
+    android: 'http://10.112.217.13:8000', // Your computer's IP on the network
+    ios: 'http://192.168.143.13:8000',
     web: 'http://localhost:8000',
-    default: 'http://localhost:8000',
+    default: 'http://192.168.143.13:8000',
   });
   
   // Helper functions for storage - now using AsyncStorage
@@ -107,6 +108,7 @@ import {
   export const AuthContextProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
+    const [isLoading, setIsLoading] = useState(true);
   
     // When the component mounts, check if the user is already logged in
     useEffect(() => {
@@ -115,8 +117,6 @@ import {
           const accessToken = await getAuthData("accessToken");
           const username = await getAuthData("username");
           const refreshToken = await getAuthData("token");
-  
-          // Check if token is valid
           if (accessToken) {
             const isLoggedIn = await fetch(`${API_URL}/auth/v1/ping`, {
               method: "GET",
@@ -124,21 +124,17 @@ import {
                 Authorization: `Bearer ${accessToken}`,
               },
             });
-  
             const response = await isLoggedIn.text();
-            if(response === ""){
-              // means access token is invalid or expired need to refresh the token
+            if (response === "") {
               const refreshResponse = await getRefreshToken();
-              const {success} = refreshResponse; 
-              if(!success){
+              if (!refreshResponse.success) {
                 setUser(null);
                 setIsAuthenticated(false);
+                setIsLoading(false);
                 return;
               }
             }
           }
-  
-          // If we have all required data, set user as authenticated
           if (username && accessToken && refreshToken) {
             setUser({ username });
             setIsAuthenticated(true);
@@ -148,9 +144,11 @@ import {
           }
         } catch (error) {
           setIsAuthenticated(false);
+          setUser(null);
+        } finally {
+          setIsLoading(false);
         }
       };
-  
       checkAuthStatus();
     }, []);
   
@@ -178,6 +176,7 @@ import {
           signal: controller.signal
         });
         
+
         clearTimeout(timeoutId);
         
         if (!response.ok) {
@@ -425,6 +424,7 @@ import {
           logout, 
           register,
           getRefreshToken,
+          isLoading,
           lastUpdated: LAST_UPDATED,
           currentUser: CURRENT_USER
         }}

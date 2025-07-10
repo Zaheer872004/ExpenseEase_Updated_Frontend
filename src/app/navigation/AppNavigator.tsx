@@ -1,44 +1,33 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Profile from '../pages/Profile';
-import Home from '../pages/Home';
-import Spends from '../pages/Spends';
+// import React from 'react';
+// import { NavigationContainer } from '@react-navigation/native';
+// import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-export type RootStackParamList = {
-  Home: undefined;
-  Profile: undefined;
-  Spends: undefined;
-};
+// import TabNavigator from './TabNavigator'; // 👈 This should be your tabs
+// import ExpenseForm from '../pages/ExpenseForm';
+// import SpendsInsights from '../pages/SpendsInsights';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// export type RootStackParamList = {
+//   MainTabs: undefined;
+//   ExpenseForm: undefined;
+//   SpendsInsights: undefined;
+// };
 
-const AppNavigator = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-        }}>
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen
-          name="Profile"
-          component={Profile}
-          options={{
-            headerShown: true,
-            headerTitle: 'Profile',
-            headerShadowVisible: false,
-            headerStyle: {
-              backgroundColor: 'transparent',
-            },
-          }}
-        />
-        <Stack.Screen name="Spends" component={Spends} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
+// const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default AppNavigator;
+// const AppNavigator = () => {
+//   return (
+//     <NavigationContainer>
+//       <Stack.Navigator
+//         initialRouteName="MainTabs"
+//         screenOptions={{
+//           headerShown: false,
+//         }}>
+//         <Stack.Screen name="MainTabs" component={TabNavigator} />
+//         <Stack.Screen name="ExpenseForm" component={ExpenseForm} />
+//         <Stack.Screen name="SpendsInsights" component={SpendsInsights} />
+//       </Stack.Navigator>
+//     </NavigationContainer>
+//   );
+// };
+
+// export default AppNavigator;

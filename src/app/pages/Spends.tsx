@@ -1,173 +1,329 @@
-// SpendScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
   Alert,
   Platform,
 } from 'react-native';
 import CustomText from '../components/CustomText';
-import CustomBox from '../components/CustomBox';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuthData } from '../context/authContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import TransactionItem from '../components/TransactionItem';
+import LinearGradient from 'react-native-linear-gradient';
+import {useExpenses} from '../context/expenseContext';
+import {Expense} from '../api/services/ExpenseService';
+import {format} from 'date-fns';
 
-const API_URL = Platform.select({
-  android: 'http://192.168.143.13:8000',
-  ios: 'http://localhost:8000',
-  web: 'http://localhost:8000',
-  default: 'http://localhost:8000',
-});
+const SpendScreen = ({navigation}: {navigation: any}) => {
+  const {expenses, isLoading, error, refreshExpenses} = useExpenses();
 
-export interface ExpenseDto {
-  key: number;
-  amount: number;
-  merchant: string;
-  currency: string;
-  createdAt: Date;
-}
-
-const SpendScreen = () => {
-  const [expenses, setExpenses] = useState<ExpenseDto[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => {
-    fetchExpenses();
-  }, []);
+    filterExpenses();
+  }, [searchQuery, activeFilter, expenses]);
 
-  const fetchExpenses = async () => {
+  const filterExpenses = () => {
+    let filtered = [...expenses]
+    .sort((a, b) => {
+      // Sort by date in descending order (newest first)
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    })
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(expense =>
+        expense.merchant.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    // Apply category filter
+    if (activeFilter !== 'All') {
+      if (activeFilter === 'Debited' || activeFilter === 'Credited') {
+        filtered = filtered.filter(
+          expense =>
+            expense.transaction_type?.toLowerCase() ===
+            activeFilter.toLowerCase(),
+        );
+      } else {
+        // Filter by category
+        filtered = filtered.filter(
+          expense =>
+            expense.category === activeFilter ||
+            expense.merchant === activeFilter,
+        );
+      }
+    }
+
+    setFilteredExpenses(filtered);
+  };
+
+  const handleTransactionPress = (transaction: any) => {
+    // For nested navigation use this format
+    navigation.navigate('ExpenseForm', {
+      expense: expenses.find(e => e.external_id === transaction.id),
+    });
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
     try {
-      setError(null);
-      const token = await getAuthData('accessToken');
-      if (!token) throw new Error('Access token missing.');
-
-      const res = await fetch(`${API_URL}/expense/v1/getExpense`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      });
-
-      if (!res.ok) throw new Error(`Error ${res.status}: Unable to fetch expenses.`);
-      const data = await res.json();
-
-      const formatted: ExpenseDto[] = data.map((exp: any, i: number) => ({
-        key: i + 1,
-        amount: parseFloat(exp.amount), // Convert amount string to number
-        merchant: exp.merchant,
-        currency: exp.currency,
-        createdAt: new Date(), // Use current date if createdAt is missing
-      }));
-
-      setExpenses(formatted);
-    } catch (err: any) {
-      setError(err.message || 'Unexpected error occurred.');
-    } finally {
-      setIsLoading(false);
+      const date = new Date(dateString);
+      return format(date, 'dd MMM, yyyy');
+    } catch (e) {
+      return dateString;
     }
   };
 
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  // Transform expense objects to transaction items for display
+  const transformToTransactionItem = (expense: Expense) => {
+    return {
+      id: expense.external_id || '',
+      merchant: expense.merchant,
+      amount: expense.amount,
+      type: (expense.transaction_type === 'debited' ? 'debit' : 'credit') as
+        | 'debit'
+        | 'credit',
+      date: formatDate(expense.created_at),
+      category: expense.category || expense.merchant,
+    };
+  };
 
-  const renderItem = ({ item }: { item: ExpenseDto }) => (
-    <CustomBox style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.merchantInfo}>
-          <View style={styles.iconCircle}>
-            <Icon name="shopping" color="#fff" size={20} />
-          </View>
-          <CustomText style={styles.merchantName}>{item.merchant}</CustomText>
-        </View>
-        <CustomText style={styles.date}>{formatDate(item.createdAt)}</CustomText>
-      </View>
-      <CustomText style={styles.amount}>
-        {item.currency} {item.amount.toLocaleString()}
+  const filterOptions = [
+    'All',
+    'Debited',
+    'Credited',
+    // 'Others',
+    // 'Food',
+    // 'Transport',
+    // 'Shopping',
+  ];
+
+  const renderFilterChip = (filter: string) => (
+    <TouchableOpacity
+      key={filter}
+      style={[
+        styles.filterChip,
+        activeFilter === filter && styles.activeFilterChip,
+      ]}
+      onPress={() => setActiveFilter(filter)}>
+      <CustomText
+        style={[
+          styles.filterText,
+          activeFilter === filter && styles.activeFilterText,
+        ]}>
+        {filter}
       </CustomText>
-    </CustomBox>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <CustomText style={styles.title}>Your Expenses</CustomText>
-        <TouchableOpacity style={styles.iconButton}>
-          <Icon name="filter-variant" size={24} color="#555" />
-        </TouchableOpacity>
+      <LinearGradient colors={['#2ecc71', '#27ae60']} style={styles.header}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Icon name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <CustomText style={styles.headerTitle}>Expenses</CustomText>
+          <TouchableOpacity
+            style={styles.insightsButton}
+            onPress={() => navigation.navigate('SpendsInsights')}>
+            <Icon name="chart-pie" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Icon
+            name="magnify"
+            size={20}
+            color="#95a5a6"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search transactions..."
+            placeholderTextColor="#95a5a6"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery ? (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setSearchQuery('')}>
+              <Icon name="close-circle" size={16} color="#95a5a6" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </LinearGradient>
+
+      <View style={styles.filtersContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersScrollContent}>
+          {filterOptions.map(filter => renderFilterChip(filter))}
+        </ScrollView>
       </View>
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#27ae60" />
+          <ActivityIndicator size="large" color="#2ecc71" />
           <CustomText style={styles.statusText}>Loading expenses...</CustomText>
         </View>
       ) : error ? (
         <View style={styles.center}>
           <Icon name="alert-circle-outline" size={60} color="#e74c3c" />
           <CustomText style={styles.statusText}>{error}</CustomText>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchExpenses}>
+          <TouchableOpacity style={styles.retryBtn} onPress={refreshExpenses}>
             <CustomText style={styles.retryText}>Retry</CustomText>
           </TouchableOpacity>
         </View>
-      ) : expenses.length === 0 ? (
+      ) : filteredExpenses.length === 0 ? (
         <View style={styles.center}>
           <Icon name="cash-remove" size={70} color="#95a5a6" />
-          <CustomText style={styles.statusText}>No expenses found</CustomText>
-          <TouchableOpacity style={styles.retryBtnOutline} onPress={fetchExpenses}>
-            <Icon name="refresh" size={20} color="#3498db" style={{ marginRight: 8 }} />
+          <CustomText style={styles.statusText}>
+            {searchQuery
+              ? 'No matching transactions found'
+              : 'No expenses found'}
+          </CustomText>
+          <TouchableOpacity
+            style={styles.retryBtnOutline}
+            onPress={refreshExpenses}>
+            <Icon
+              name="refresh"
+              size={20}
+              color="#3498db"
+              style={{marginRight: 8}}
+            />
             <CustomText style={styles.refreshLabel}>Refresh</CustomText>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={expenses}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.key.toString()}
+          data={filteredExpenses.map(transformToTransactionItem)}
+          renderItem={({item}) => (
+            <TransactionItem
+              transaction={item}
+              onPress={() => handleTransactionPress(item)}
+            />
+          )}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
           refreshing={isLoading}
-          onRefresh={fetchExpenses}
+          onRefresh={refreshExpenses}
         />
       )}
 
-      <TouchableOpacity style={styles.fab}>
-        <Icon name="plus" size={28} color="#fff" />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('ExpenseForm')}>
+        <LinearGradient
+          colors={['#2ecc71', '#27ae60']}
+          style={styles.fabGradient}>
+          <Icon name="plus" size={28} color="#fff" />
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
 };
 
+// Don't forget to import ScrollView
+import {ScrollView} from 'react-native';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafa' },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 55,
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 2,
+  // Your existing styles...
+  // (keeping the same styles as in your original code)
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#2c3e50' },
-  iconButton: {
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 25,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
     width: 40,
     height: 40,
-    backgroundColor: '#ecf0f1',
     borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  insightsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    height: 50,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    height: 50,
+  },
+  clearButton: {
+    padding: 5,
+  },
+  filtersContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  filtersScrollContent: {
+    paddingHorizontal: 20,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  activeFilterChip: {
+    backgroundColor: 'rgba(46, 204, 113, 0.15)',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+  },
+  activeFilterText: {
+    color: '#2ecc71',
+    fontWeight: '600',
   },
   center: {
     flex: 1,
@@ -175,7 +331,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
   },
-  statusText: { marginTop: 15, fontSize: 16, color: '#666', textAlign: 'center' },
+  statusText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
   retryBtn: {
     marginTop: 20,
     backgroundColor: '#e74c3c',
@@ -193,62 +354,42 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
   },
-  retryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  refreshLabel: { color: '#3498db', fontSize: 15, fontWeight: '600' },
+  retryText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  refreshLabel: {
+    color: '#3498db',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   listContainer: {
     padding: 20,
     paddingBottom: 90,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  merchantInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  merchantName: {
-    fontSize: 16,
-    color: '#2c3e50',
-    fontWeight: '600',
-  },
-  date: {
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  amount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2ecc71',
   },
   fab: {
     position: 'absolute',
     bottom: 30,
     right: 20,
-    backgroundColor: '#2ecc71',
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  fabGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
   },
 });
 
