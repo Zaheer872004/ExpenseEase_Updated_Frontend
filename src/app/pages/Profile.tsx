@@ -27,9 +27,7 @@ export interface UserDto {
   username?: string;
 }
 
-// Current timestamp info
-const CURRENT_DATE = "2025-07-10 14:10:43";
-const CURRENT_USER = "Zaheer87";
+
 
 const API_URL = Platform.select({
   android: 'http://10.112.217.13:8000',
@@ -283,12 +281,6 @@ const Profile = ({ navigation }:{navigation:any}) => {
         <View style={styles.footer}>
           <CustomText style={styles.footerText}>
             User ID: {userData.user_id}
-          </CustomText>
-          <CustomText style={styles.footerText}>
-            Last Updated: {CURRENT_DATE}
-          </CustomText>
-          <CustomText style={styles.footerText}>
-            User: {CURRENT_USER}
           </CustomText>
         </View>
       </ScrollView>

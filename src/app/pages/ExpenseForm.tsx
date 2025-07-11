@@ -32,9 +32,7 @@ const CATEGORIES = [
   { id: 'Other', name: 'Other', icon: 'dots-horizontal' },
 ];
 
-// Current timestamp info
-const LAST_UPDATED = "2025-07-10 12:38:17";
-const CURRENT_USER = "Zaheer87";
+
 
 const ExpenseFormScreen = ({ navigation, route }:{navigation:any,route:any}) => {
   // Get expense if we're editing

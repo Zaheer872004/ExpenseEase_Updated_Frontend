@@ -26,9 +26,7 @@ import Profile from './Profile';
 
 const { width } = Dimensions.get('window');
 
-// Current timestamp info - updated with latest timestamp
-const LAST_UPDATED = '2025-07-10 15:11:51';
-const CURRENT_USER = 'Zaheer87';
+
 
 // Budget threshold constants
 const BUDGET_THRESHOLD_WARNING = 75;
@@ -481,7 +479,7 @@ const HomeScreen = ({navigation}: {navigation: any}) => {
 
         <View style={styles.footer}>
           <CustomText style={styles.footerText}>
-            Last Updated: {LAST_UPDATED}
+            © 2025 Expense Tracker App
           </CustomText>
           <CustomText style={styles.footerText}>
             Created By - Zaheer Khan

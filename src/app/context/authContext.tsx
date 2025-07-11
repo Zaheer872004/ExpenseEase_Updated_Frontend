@@ -9,9 +9,7 @@ import {
   import AsyncStorage from '@react-native-async-storage/async-storage';
   import { Platform } from 'react-native';
   
-  // Current date and user information
-  const LAST_UPDATED = "2025-06-07 05:33:39";
-  const CURRENT_USER = "Zaheer87";
+ 
   
   // Define User type
   interface User {
@@ -28,6 +26,7 @@ import {
   
   // Define types
   interface AuthContextType {
+    // userId: string | null; 
     user: User | null;
     isAuthenticated: boolean | undefined;
     isLoading: boolean;
@@ -42,8 +41,7 @@ import {
       phoneNumber: string
     ) => Promise<{ success: boolean; msg?: string }>;
     getRefreshToken: () => Promise<{ success: boolean; msg?: string }>;
-    lastUpdated: string;
-    currentUser: string;
+    
   }
   
   // Create context with default value
@@ -106,6 +104,7 @@ import {
   
   // Provider component
   export const AuthContextProvider = ({ children }: AuthProviderProps) => {
+    // const [userId, setUserId] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
@@ -137,6 +136,7 @@ import {
           }
           if (username && accessToken && refreshToken) {
             setUser({ username });
+            
             setIsAuthenticated(true);
           } else {
             setUser(null);
@@ -418,6 +418,7 @@ import {
     return (
       <AuthContext.Provider
         value={{ 
+          // userId,
           user, 
           isAuthenticated, 
           login, 
@@ -425,8 +426,6 @@ import {
           register,
           getRefreshToken,
           isLoading,
-          lastUpdated: LAST_UPDATED,
-          currentUser: CURRENT_USER
         }}
       >
         {children}

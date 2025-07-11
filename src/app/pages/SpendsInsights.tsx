@@ -12,16 +12,14 @@ import CustomText from '../components/CustomText';
 import {theme} from '../theme/theme';
 import {Text} from 'react-native';
 import {LineChart} from 'react-native-chart-kit';
-import {getAuthData} from '../context/authContext';
+import {getAuthData, useAuth} from '../context/authContext';
 import LinearGradient from 'react-native-linear-gradient';
 import {useExpenses} from '../context/expenseContext';
 import {Expense} from '../api/services/ExpenseService';
 
+
 const {width} = Dimensions.get('window');
 
-// Current timestamp info
-const CURRENT_DATE = '2025-07-10 14:58:38';
-const CURRENT_USER = 'Zaheer87';
 
 const chartConfig = {
   backgroundGradientFrom: '#ffffff',
@@ -52,7 +50,7 @@ const categoryIcons: Record<string, {icon: string; color: string}> = {
   Other: {icon: '🔄', color: '#95a5a6'},
 };
 
-const SpendInsights = ({navigation}: {navigation: any}) => {
+const SpendInsights =   ({navigation}: {navigation: any}) => {
   const {expenses, isLoading} = useExpenses();
   const [activeTab, setActiveTab] = useState('Monthly');
   const [loading, setLoading] = useState(false);
@@ -63,6 +61,8 @@ const SpendInsights = ({navigation}: {navigation: any}) => {
   const [totalExpense, setTotalExpense] = useState(0);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [chartData, setChartData] = useState<any>(null);
+
+  const {user} = useAuth();
 
   const months = [
     'Jan',
@@ -440,10 +440,9 @@ const SpendInsights = ({navigation}: {navigation: any}) => {
 
         <View style={styles.footer}>
           <CustomText style={styles.footerText}>
-            Last Updated: {CURRENT_DATE}
-          </CustomText>
-          <CustomText style={styles.footerText}>
-            User: {CURRENT_USER}
+              {
+            user ? `Logged in as ${user.username}` : 'Not logged in'
+              }
           </CustomText>
         </View>
       </ScrollView>
