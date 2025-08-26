@@ -30,7 +30,7 @@ export interface UserDto {
 
 
 const API_URL = Platform.select({
-  android: 'http://10.112.217.13:8000',
+  android: 'http://10.108.79.13:8000',
   ios: 'http://localhost:8000',
   web: 'http://localhost:8000',
   default: 'http://localhost:8000',

@@ -4,7 +4,7 @@ import { getAuthData, storeAuthData } from '../context/authContext';
 
 // API URL configuration based on platform
 export const API_URL = Platform.select({
-  android: 'http://10.112.217.13:8000',
+  android: 'http://10.108.79.13:8000', //10.108.79.13
   ios: 'http://192.168.143.13:8000',
   web: 'http://localhost:8000',
   default: 'http://192.168.143.13:8000',

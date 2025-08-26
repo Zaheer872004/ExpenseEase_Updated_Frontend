@@ -54,7 +54,7 @@ import {
   
   // API URL configuration based on platform
   const API_URL = Platform.select({
-    android: 'http://10.112.217.13:8000', // Your computer's IP on the network
+    android: 'http://10.108.79.13:8000', // Your computer's IP on the network
     ios: 'http://192.168.143.13:8000',
     web: 'http://localhost:8000',
     default: 'http://192.168.143.13:8000',

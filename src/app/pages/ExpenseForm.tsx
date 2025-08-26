@@ -295,14 +295,7 @@ const ExpenseFormScreen = ({ navigation, route }:{navigation:any,route:any}) => 
           </View>
         </View>
         
-        <View style={styles.metadataContainer}>
-          <CustomText style={styles.metadataText}>
-            Last Updated: {LAST_UPDATED}
-          </CustomText>
-          <CustomText style={styles.metadataText}>
-            User: {CURRENT_USER}
-          </CustomText>
-        </View>
+        
       </ScrollView>
       
       <View style={styles.footer}>

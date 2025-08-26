@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API configuration
-const SERVER_BASE_URL = 'http://10.112.217.13:8000';
+const SERVER_BASE_URL = 'http://10.108.79.13:8000';
 
 // Current timestamp info for logging
 const getCurrentTimestamp = () => {
